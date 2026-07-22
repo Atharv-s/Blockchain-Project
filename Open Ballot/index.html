@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Open Ballot — Vote on the Blockchain</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --petrol:#0C2226;
+    --petrol-2:#132F34;
+    --petrol-3:#1B3B41;
+    --line: rgba(243,239,227,0.10);
+    --ivory:#F3EFE3;
+    --muted:#7FA0A0;
+    --gold:#D4A94C;
+    --gold-bright:#E8C374;
+    --berry:#B23A5C;
+    --berry-bright:#D14C71;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse 850px 480px at 90% -10%, rgba(212,169,76,0.09), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 0% 20%, rgba(178,58,92,0.07), transparent 60%),
+      var(--petrol);
+    color:var(--ivory);
+    font-family:'IBM Plex Sans', sans-serif;
+    min-height:100vh;
+    line-height:1.5;
+  }
+  .mono{font-family:'IBM Plex Mono', monospace;}
+  .display{font-family:'Libre Caslon Text', serif;}
+
+  nav{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:22px 6vw; border-bottom:1px solid var(--line);
+    position:sticky; top:0; z-index:30;
+    background:rgba(12,34,38,0.88); backdrop-filter: blur(10px);
+  }
+  .brand{display:flex; align-items:center; gap:12px; font-family:'Libre Caslon Text', serif; font-style:italic; font-weight:400; font-size:1.25rem;}
+  .brand-mark{width:22px; height:16px; border:1.5px solid var(--gold); border-radius:2px; position:relative; flex-shrink:0;}
+  .brand-mark::after{content:''; position:absolute; left:50%; top:50%; width:9px; height:1.5px; background:var(--gold); transform:translate(-50%,-50%) rotate(-25deg);}
+  #connectBtn{
+    background:none; border:1px solid rgba(243,239,227,0.25); color:var(--ivory); font-family:'IBM Plex Sans';
+    padding:8px 18px; border-radius:999px; font-size:0.8rem; cursor:pointer; transition:all .2s ease;
+    display:flex; align-items:center; gap:9px;
+  }
+  #connectBtn:hover{border-color:var(--gold-bright); color:var(--gold-bright);}
+  .wallet-dot{width:7px; height:7px; border-radius:50%; background:var(--muted);}
+  .wallet-dot.on{background:var(--gold-bright); box-shadow:0 0 0 3px rgba(212,169,76,0.2);}
+
+  header.hero{padding:60px 6vw 8px; max-width:880px;}
+  .eyebrow{
+    font-family:'IBM Plex Mono'; font-size:0.72rem; letter-spacing:0.16em; text-transform:uppercase;
+    color:var(--berry-bright); margin-bottom:18px; display:flex; align-items:center; gap:10px;
+  }
+  .eyebrow::before{content:''; width:22px; height:1px; background:var(--berry-bright);}
+  h1.display{
+    font-size:clamp(2.1rem, 4.8vw, 3.2rem); font-weight:400; line-height:1.15; margin:0 0 18px; letter-spacing:-0.005em;
+  }
+  h1.display em{font-style:italic; color:var(--gold-bright);}
+  .lede{color:var(--muted); font-size:1.02rem; max-width:560px; margin:0;}
+
+  main{padding:26px 6vw 100px; max-width:880px;}
+
+  .composer{
+    background:var(--petrol-2); border:1px solid var(--line); border-radius:4px; padding:30px 32px; margin-top:30px;
+  }
+  .composer-label{font-family:'IBM Plex Mono'; font-size:0.7rem; letter-spacing:0.14em; text-transform:uppercase; color:var(--gold-bright); margin-bottom:14px;}
+  input[type=text], .opt-input{
+    width:100%; background:var(--petrol-3); border:1px solid var(--line); border-radius:3px;
+    color:var(--ivory); font-family:'IBM Plex Sans'; padding:12px 14px; font-size:0.92rem; margin-bottom:10px;
+  }
+  input[type=text]::placeholder, .opt-input::placeholder{color:var(--muted);}
+  .opt-row{display:flex; gap:10px; align-items:center;}
+  .opt-row .opt-input{margin-bottom:10px;}
+  .opt-remove{
+    background:none; border:none; color:var(--muted); cursor:pointer; font-size:1.1rem; padding:0 6px 10px;
+    line-height:1;
+  }
+  .opt-remove:hover{color:var(--berry-bright);}
+  .link-btn{
+    background:none; border:none; color:var(--gold-bright); font-family:'IBM Plex Sans'; font-size:0.85rem;
+    cursor:pointer; padding:0; margin:4px 0 18px; text-decoration:underline; text-underline-offset:3px;
+  }
+  button.action{
+    padding:13px 26px; border-radius:3px; border:1px solid var(--gold);
+    background:transparent; color:var(--gold-bright); font-family:'IBM Plex Sans'; font-weight:500;
+    font-size:0.88rem; cursor:pointer; transition: all .2s ease;
+  }
+  button.action:hover:not(:disabled){background:var(--gold); color:var(--petrol);}
+  button.action:disabled{opacity:0.4; cursor:not-allowed;}
+  button.action.primary{background:var(--berry); border-color:var(--berry); color:var(--ivory);}
+  button.action.primary:hover:not(:disabled){background:var(--berry-bright); border-color:var(--berry-bright);}
+
+  .status{font-size:0.84rem; margin-top:12px; color:var(--muted); min-height:1.2em;}
+  .status.err{color:var(--berry-bright);}
+  .status.ok{color:var(--gold-bright);}
+
+  .divider-label{
+    display:flex; align-items:center; gap:14px; margin:44px 0 20px; color:var(--muted);
+    font-size:0.72rem; letter-spacing:0.14em; text-transform:uppercase;
+  }
+  .divider-label::before, .divider-label::after{content:''; flex:1; height:1px; background:var(--line);}
+  .divider-label .count{color:var(--gold-bright); font-family:'IBM Plex Mono';}
+
+  /* ---------- POLL CARDS ---------- */
+  .poll-card{
+    background:var(--petrol-2); border:1px solid var(--line); border-radius:4px; padding:26px 30px 28px; margin-bottom:18px;
+  }
+  .poll-q{font-family:'Libre Caslon Text'; font-size:1.2rem; margin:0 0 6px; line-height:1.35;}
+  .poll-meta{color:var(--muted); font-size:0.76rem; font-family:'IBM Plex Mono'; margin-bottom:20px;}
+
+  .option-row{margin-bottom:12px; cursor:pointer;}
+  .option-top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; font-size:0.88rem;}
+  .option-name{display:flex; align-items:center; gap:10px;}
+  .option-pct{font-family:'IBM Plex Mono'; color:var(--muted); font-size:0.8rem;}
+  .bar-track{height:9px; background:var(--petrol-3); border-radius:99px; overflow:hidden; position:relative;}
+  .bar-fill{
+    height:100%; background:linear-gradient(90deg, var(--gold), var(--gold-bright));
+    width:0%; border-radius:99px; transition: width 0.6s cubic-bezier(.3,.9,.4,1);
+  }
+  .option-row.mine .bar-fill{background:linear-gradient(90deg, var(--berry), var(--berry-bright));}
+  .option-row.mine .option-name::before{content:'✓ '; color:var(--berry-bright); font-weight:700;}
+  .option-row:not(.voted):hover .bar-track{box-shadow:0 0 0 1px var(--gold-bright);}
+
+  .poll-footer{display:flex; justify-content:space-between; align-items:center; margin-top:18px;}
+  .total-votes{font-family:'IBM Plex Mono'; font-size:0.76rem; color:var(--muted);}
+
+  /* ---------- BALLOT DROP ANIMATION (signature element) ---------- */
+  .ballot-stage{
+    position:fixed; inset:0; pointer-events:none; z-index:50;
+    display:flex; align-items:flex-start; justify-content:center;
+  }
+  .ballot-slip{
+    position:absolute; top:120px; width:120px; height:76px;
+    background:var(--ivory); border-radius:2px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.35);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono'; font-size:0.6rem; color:var(--petrol); letter-spacing:0.05em; text-transform:uppercase;
+    opacity:0;
+  }
+  .ballot-slip.drop{
+    animation: dropIn 0.9s cubic-bezier(.5,0,.35,1) forwards;
+  }
+  @keyframes dropIn{
+    0%{ opacity:1; transform: translateY(0) rotate(-8deg) scale(1); }
+    70%{ opacity:1; transform: translateY(220px) rotate(6deg) scale(0.9); }
+    100%{ opacity:0; transform: translateY(260px) rotate(6deg) scale(0.7); }
+  }
+
+  footer{padding:30px 6vw 60px; color:var(--muted); font-size:0.78rem; border-top:1px solid var(--line);}
+  footer a{color:var(--gold-bright); text-decoration:none;}
+  footer a:hover{text-decoration:underline;}
+
+  .empty-state{color:var(--muted); font-size:0.9rem; padding:20px 0;}
+
+  @media (prefers-reduced-motion: reduce){
+    .ballot-slip.drop{animation:none; opacity:0;}
+    .bar-fill{transition:none;}
+  }
+  @media (max-width:640px){
+    .composer{padding:22px 20px;} .poll-card{padding:22px 20px;} nav{padding:18px 5vw;} header.hero{padding:40px 5vw 6px;}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="brand"><span class="brand-mark"></span>Open Ballot</div>
+  <button id="connectBtn"><span class="wallet-dot" id="walletDot"></span><span id="walletLabel">Connect wallet</span></button>
+</nav>
+
+<header class="hero">
+  <div class="eyebrow">On-chain polling &mdash; one wallet, one vote</div>
+  <h1 class="display">Ask a question. <em>Let the chain keep count.</em></h1>
+  <p class="lede">Create a poll, share the link, and watch results tally live — every vote is a public, tamper-proof transaction. No one, including you as the poll's creator, can edit a vote once it's cast.</p>
+</header>
+
+<main>
+
+  <div class="composer">
+    <div class="composer-label">Create a new poll</div>
+    <input type="text" id="questionInput" placeholder="What do you want to ask?" />
+    <div id="optionsList">
+      <div class="opt-row"><input type="text" class="opt-input" placeholder="Option 1" /><span></span></div>
+      <div class="opt-row"><input type="text" class="opt-input" placeholder="Option 2" /><span></span></div>
+    </div>
+    <button class="link-btn" id="addOptionBtn">+ Add another option</button>
+    <div>
+      <button class="action primary" id="createPollBtn" disabled>Connect wallet to create a poll</button>
+    </div>
+    <div class="status" id="createStatus"></div>
+  </div>
+
+  <div class="divider-label">Live polls <span class="count" id="pollCountLabel">&mdash;</span></div>
+
+  <div id="pollsContainer">
+    <div class="empty-state">Connect your wallet to load polls from the chain.</div>
+  </div>
+
+</main>
+
+<footer>
+  Runs on the Ethereum Sepolia test network. Requires a browser wallet (e.g. MetaMask) with free test ETH from a
+  <a href="https://sepoliafaucet.com" target="_blank" rel="noopener">Sepolia faucet</a>. One vote per wallet address, per poll.
+</footer>
+
+<div class="ballot-stage" id="ballotStage"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.1/dist/ethers.umd.min.js"></script>
+<script>
+/* =========================================================================
+   CONFIG — fill these in after you deploy OpenBallot.sol
+   ========================================================================= */
+const CONTRACT_ADDRESS = "Deployed_contract_address"; // <-- paste after deploying via Remix
+const CONTRACT_ABI = [
+  "function createPoll(string question, string[] options) external returns (uint256 pollId)",
+  "function vote(uint256 pollId, uint256 optionIndex) external",
+  "function getPoll(uint256 pollId) external view returns (address creator, string question, string[] options, uint256[] voteCounts, uint256 createdAt, bool exists)",
+  "function hasVoted(uint256 pollId, address voter) external view returns (bool)",
+  "function pollCount() external view returns (uint256)",
+  "event PollCreated(uint256 indexed pollId, address indexed creator, string question, uint256 optionCount)",
+  "event VoteCast(uint256 indexed pollId, address indexed voter, uint256 optionIndex)"
+];
+const EXPECTED_CHAIN_ID = 11155111n; // Sepolia testnet
+/* ========================================================================= */
+
+let provider, signer, contract, myAddress;
+
+// ---------- Wallet connect ----------
+const connectBtn = document.getElementById("connectBtn");
+const walletDot = document.getElementById("walletDot");
+const walletLabel = document.getElementById("walletLabel");
+const createPollBtn = document.getElementById("createPollBtn");
+
+async function connectWallet(){
+  if(!window.ethereum){
+    setStatus("createStatus", "No wallet found. Install MetaMask to continue.", "err");
+    return;
+  }
+  provider = new ethers.BrowserProvider(window.ethereum);
+  await provider.send("eth_requestAccounts", []);
+  signer = await provider.getSigner();
+  const network = await provider.getNetwork();
+
+  if(network.chainId !== EXPECTED_CHAIN_ID){
+    try{
+      await window.ethereum.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: "0x" + EXPECTED_CHAIN_ID.toString(16) }]
+      });
+    }catch(e){
+      setStatus("createStatus", "Please switch your wallet to the Sepolia test network.", "err");
+      return;
+    }
+  }
+
+  contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+  myAddress = await signer.getAddress();
+  walletDot.classList.add("on");
+  walletLabel.textContent = myAddress.slice(0,6) + "…" + myAddress.slice(-4);
+  createPollBtn.disabled = false;
+  createPollBtn.textContent = "Publish poll on-chain";
+
+  loadPolls();
+}
+connectBtn.addEventListener("click", connectWallet);
+
+function setStatus(id, msg, kind){
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = "status" + (kind ? " " + kind : "");
+}
+
+// ---------- Poll creation ----------
+document.getElementById("addOptionBtn").addEventListener("click", ()=>{
+  const list = document.getElementById("optionsList");
+  if(list.children.length >= 8){
+    setStatus("createStatus", "Maximum 8 options per poll.", "err");
+    return;
+  }
+  const row = document.createElement("div");
+  row.className = "opt-row";
+  row.innerHTML = `<input type="text" class="opt-input" placeholder="Option ${list.children.length+1}" />
+    <button class="opt-remove" title="Remove option">&times;</button>`;
+  row.querySelector(".opt-remove").addEventListener("click", ()=>row.remove());
+  list.appendChild(row);
+});
+
+createPollBtn.addEventListener("click", async ()=>{
+  const question = document.getElementById("questionInput").value.trim();
+  const optionInputs = Array.from(document.querySelectorAll(".opt-input"));
+  const options = optionInputs.map(i=>i.value.trim()).filter(v=>v.length>0);
+
+  if(!question){ setStatus("createStatus", "Enter a question first.", "err"); return; }
+  if(options.length < 2){ setStatus("createStatus", "Enter at least 2 options.", "err"); return; }
+
+  createPollBtn.disabled = true;
+  setStatus("createStatus", "Confirm the transaction in your wallet…");
+  try{
+    const tx = await contract.createPoll(question, options);
+    setStatus("createStatus", "Waiting for confirmation on-chain…");
+    await tx.wait();
+    setStatus("createStatus", "Poll published.", "ok");
+    document.getElementById("questionInput").value = "";
+    optionInputs.forEach(i=>i.value = "");
+    loadPolls();
+  }catch(err){
+    console.error(err);
+    setStatus("createStatus", err.reason || "Transaction failed or was rejected.", "err");
+  }finally{
+    createPollBtn.disabled = false;
+  }
+});
+
+// ---------- Load & render polls ----------
+async function loadPolls(){
+  const container = document.getElementById("pollsContainer");
+  const readContract = contract || new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI,
+    provider || new ethers.BrowserProvider(window.ethereum));
+
+  let count;
+  try{
+    count = await readContract.pollCount();
+  }catch(err){
+    container.innerHTML = `<div class="empty-state">Could not load polls. Check the contract address and network.</div>`;
+    return;
+  }
+
+  document.getElementById("pollCountLabel").textContent = count.toString();
+
+  if(count === 0n){
+    container.innerHTML = `<div class="empty-state">No polls yet — be the first to create one above.</div>`;
+    return;
+  }
+
+  container.innerHTML = "";
+  // Show newest first
+  for(let i = Number(count) - 1; i >= 0; i--){
+    const poll = await readContract.getPoll(i);
+    const [creator, question, options, voteCounts, createdAt, exists] = poll;
+    if(!exists) continue;
+
+    const total = voteCounts.reduce((a,b)=>a + Number(b), 0);
+    let votedIndex = -1;
+    if(myAddress){
+      const voted = await readContract.hasVoted(i, myAddress);
+      if(voted){
+        // find which option — we don't store this directly, so infer via events would be ideal;
+        // for simplicity we just mark "voted" state without highlighting the exact pick here.
+      }
+    }
+
+    const card = document.createElement("div");
+    card.className = "poll-card";
+    const date = new Date(Number(createdAt) * 1000).toLocaleDateString(undefined, {month:"short", day:"numeric", year:"numeric"});
+
+    let optionsHtml = "";
+    options.forEach((opt, idx)=>{
+      const votes = Number(voteCounts[idx]);
+      const pct = total > 0 ? Math.round((votes/total)*100) : 0;
+      optionsHtml += `
+        <div class="option-row" data-poll="${i}" data-option="${idx}">
+          <div class="option-top">
+            <span class="option-name">${escapeHtml(opt)}</span>
+            <span class="option-pct">${votes} vote${votes!==1?"s":""} · ${pct}%</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+        </div>`;
+    });
+
+    card.innerHTML = `
+      <div class="poll-q">${escapeHtml(question)}</div>
+      <div class="poll-meta">Poll #${i} · created ${date} · by ${creator.slice(0,6)}…${creator.slice(-4)}</div>
+      ${optionsHtml}
+      <div class="poll-footer">
+        <span class="total-votes">${total} total vote${total!==1?"s":""}</span>
+      </div>
+    `;
+    container.appendChild(card);
+
+    // wire up voting on each option row
+    card.querySelectorAll(".option-row").forEach(row=>{
+      row.addEventListener("click", ()=>castVote(Number(row.dataset.poll), Number(row.dataset.option), row));
+    });
+
+    // if already voted, disable further clicks on this poll and show a note
+    if(myAddress){
+      const voted = await readContract.hasVoted(i, myAddress);
+      if(voted){
+        card.querySelectorAll(".option-row").forEach(row=>{
+          row.classList.add("voted");
+          row.style.cursor = "default";
+        });
+        const footer = card.querySelector(".poll-footer");
+        const note = document.createElement("span");
+        note.className = "total-votes";
+        note.style.color = "var(--gold-bright)";
+        note.textContent = "You already voted on this poll";
+        footer.appendChild(note);
+      }
+    }
+  }
+}
+
+function escapeHtml(str){
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+async function castVote(pollId, optionIndex, rowEl){
+  if(!contract){
+    setStatus("createStatus", "Connect your wallet first to vote.", "err");
+    return;
+  }
+  if(rowEl.classList.contains("voted")) return;
+
+  animateBallotDrop();
+
+  try{
+    const tx = await contract.vote(pollId, optionIndex);
+    await tx.wait();
+    loadPolls();
+  }catch(err){
+    console.error(err);
+    alert(err.reason || "Vote failed or was rejected.");
+  }
+}
+
+function animateBallotDrop(){
+  const stage = document.getElementById("ballotStage");
+  const slip = document.createElement("div");
+  slip.className = "ballot-slip drop";
+  slip.style.left = "calc(50% - 60px)";
+  slip.textContent = "Vote";
+  stage.appendChild(slip);
+  setTimeout(()=>slip.remove(), 1000);
+}
+
+// Try to load polls read-only on page load (before wallet connect) if a wallet is present
+window.addEventListener("load", ()=>{
+  if(window.ethereum){
+    loadPolls().catch(()=>{});
+  }
+});
+</script>
+</body>
+</html>
