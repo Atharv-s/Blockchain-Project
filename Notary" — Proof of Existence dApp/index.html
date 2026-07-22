@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Notary — Proof of Existence on the Blockchain</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0E141C;
+    --surface:#171F2B;
+    --surface-raised:#1E2733;
+    --line: rgba(232,227,216,0.10);
+    --bone:#E8E3D8;
+    --muted:#8B93A3;
+    --crimson:#A3273B;
+    --crimson-bright:#C7364E;
+    --brass:#B08D57;
+    --brass-bright:#CBA968;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(163,39,59,0.10), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 10%, rgba(176,141,87,0.08), transparent 60%),
+      var(--ink);
+    color:var(--bone);
+    font-family:'IBM Plex Sans', sans-serif;
+    min-height:100vh;
+    line-height:1.5;
+  }
+  .mono{font-family:'IBM Plex Mono', monospace;}
+  .display{font-family:'Fraunces', serif;}
+
+  a{color:inherit;}
+
+  /* ---------- NAV ---------- */
+  nav{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:22px 6vw;
+    border-bottom:1px solid var(--line);
+    position:sticky; top:0; z-index:20;
+    background:rgba(14,20,28,0.85);
+    backdrop-filter: blur(10px);
+  }
+  .brand{display:flex; align-items:center; gap:12px; font-family:'Fraunces', serif; font-weight:600; font-size:1.15rem; letter-spacing:0.01em;}
+  .brand-seal{width:26px; height:26px; border-radius:50%; border:1.5px solid var(--brass); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .brand-seal::after{content:''; width:9px; height:9px; border-radius:50%; background:var(--crimson);}
+  .tabs{display:flex; gap:6px; background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:4px;}
+  .tab-btn{
+    border:none; background:transparent; color:var(--muted); font-family:'IBM Plex Sans';
+    font-size:0.85rem; padding:9px 20px; border-radius:999px; cursor:pointer; transition:all .2s ease;
+    letter-spacing:0.02em;
+  }
+  .tab-btn.active{background:var(--crimson); color:var(--bone);}
+
+  /* ---------- HERO ---------- */
+  header.hero{padding:64px 6vw 20px; max-width:900px;}
+  .eyebrow{
+    font-family:'IBM Plex Mono'; font-size:0.72rem; letter-spacing:0.16em; text-transform:uppercase;
+    color:var(--brass-bright); margin-bottom:18px; display:flex; align-items:center; gap:10px;
+  }
+  .eyebrow::before{content:''; width:22px; height:1px; background:var(--brass-bright);}
+  h1.display{
+    font-size:clamp(2.2rem, 5vw, 3.4rem); font-weight:600; line-height:1.08; margin:0 0 20px;
+    letter-spacing:-0.01em;
+  }
+  h1.display em{font-style:italic; color:var(--brass-bright); font-weight:500;}
+  .lede{color:var(--muted); font-size:1.05rem; max-width:560px; margin:0 0 8px;}
+
+  main{padding:20px 6vw 100px; max-width:900px;}
+  .panel{display:none;}
+  .panel.active{display:block;}
+
+  /* ---------- CERTIFICATE CARD ---------- */
+  .certificate{
+    background: var(--surface);
+    border:1px solid var(--line);
+    border-radius:4px;
+    margin-top:36px;
+    position:relative;
+    overflow:hidden;
+  }
+  .certificate::before{
+    content:''; position:absolute; inset:0; pointer-events:none;
+    background: repeating-linear-gradient(180deg, transparent, transparent 27px, rgba(232,227,216,0.025) 28px);
+  }
+  .cert-inner{padding:44px 44px 40px; position:relative;}
+
+  .dropzone{
+    border:1.5px dashed rgba(232,227,216,0.22);
+    border-radius:3px;
+    padding:46px 24px;
+    text-align:center;
+    cursor:pointer;
+    transition: border-color .2s ease, background .2s ease;
+  }
+  .dropzone:hover, .dropzone.drag{
+    border-color: var(--brass-bright);
+    background: rgba(176,141,87,0.05);
+  }
+  .dropzone .glyph{font-size:1.8rem; margin-bottom:14px; opacity:0.8;}
+  .dropzone .primary-txt{font-family:'Fraunces'; font-size:1.15rem; font-weight:500;}
+  .dropzone .secondary-txt{color:var(--muted); font-size:0.85rem; margin-top:6px;}
+  input[type=file]{display:none;}
+
+  .ledger-row{
+    display:flex; justify-content:space-between; align-items:baseline;
+    padding:14px 0; border-bottom:1px solid var(--line); gap:20px;
+  }
+  .ledger-row:last-child{border-bottom:none;}
+  .ledger-row .k{color:var(--muted); font-size:0.78rem; letter-spacing:0.04em; text-transform:uppercase; white-space:nowrap;}
+  .ledger-row .v{font-family:'IBM Plex Mono'; font-size:0.86rem; text-align:right; word-break:break-all;}
+
+  .divider-label{
+    display:flex; align-items:center; gap:14px; margin:30px 0 18px; color:var(--muted);
+    font-size:0.72rem; letter-spacing:0.14em; text-transform:uppercase;
+  }
+  .divider-label::before, .divider-label::after{content:''; flex:1; height:1px; background:var(--line);}
+
+  button.action{
+    width:100%; padding:15px; border-radius:3px; border:1px solid var(--brass);
+    background:transparent; color:var(--brass-bright); font-family:'IBM Plex Sans'; font-weight:500;
+    font-size:0.92rem; cursor:pointer; transition: all .2s ease; letter-spacing:0.01em; margin-top:20px;
+  }
+  button.action:hover:not(:disabled){background:var(--brass); color:var(--ink);}
+  button.action:disabled{opacity:0.4; cursor:not-allowed;}
+  button.action.primary{background:var(--crimson); border-color:var(--crimson); color:var(--bone);}
+  button.action.primary:hover:not(:disabled){background:var(--crimson-bright); border-color:var(--crimson-bright); color:var(--bone);}
+
+  .status{font-size:0.85rem; margin-top:14px; color:var(--muted); min-height:1.2em;}
+  .status.err{color:var(--crimson-bright);}
+  .status.ok{color:var(--brass-bright);}
+
+  /* ---------- SEAL (signature element) ---------- */
+  .seal-stage{
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:36px 0 8px; position:relative; min-height:150px;
+  }
+  .seal{
+    width:104px; height:104px; border-radius:50%;
+    background: radial-gradient(circle at 35% 30%, var(--crimson-bright), var(--crimson) 60%, #6e1a28 100%);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 0 0 3px rgba(176,141,87,0.5), 0 10px 30px rgba(163,39,59,0.35);
+    transform: translateY(-140px) scale(1.3) rotate(-18deg);
+    opacity:0;
+    transition: transform 0.55s cubic-bezier(.2,1.4,.4,1), opacity 0.35s ease;
+  }
+  .seal.stamped{ transform: translateY(0) scale(1) rotate(-4deg); opacity:1; }
+  .seal-glyph{font-family:'Fraunces'; font-size:0.62rem; letter-spacing:0.14em; text-align:center; color:var(--bone); text-transform:uppercase; line-height:1.5;}
+  .seal-caption{font-family:'IBM Plex Mono'; font-size:0.72rem; color:var(--muted); margin-top:16px; text-align:center; opacity:0; transition:opacity .4s ease .3s;}
+  .seal-caption.show{opacity:1;}
+
+  /* ---------- WALLET BAR ---------- */
+  .wallet-bar{
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    background:var(--surface-raised); border:1px solid var(--line); border-radius:3px;
+    padding:12px 18px; margin-top:36px; font-size:0.85rem;
+  }
+  .wallet-dot{width:8px; height:8px; border-radius:50%; background:var(--muted); flex-shrink:0;}
+  .wallet-dot.on{background:var(--brass-bright); box-shadow:0 0 0 3px rgba(176,141,87,0.2);}
+  .wallet-left{display:flex; align-items:center; gap:10px; color:var(--muted);}
+  #connectBtn{
+    background:none; border:1px solid rgba(232,227,216,0.25); color:var(--bone); font-family:'IBM Plex Sans';
+    padding:7px 16px; border-radius:999px; font-size:0.8rem; cursor:pointer; transition:all .2s ease;
+  }
+  #connectBtn:hover{border-color:var(--brass-bright); color:var(--brass-bright);}
+
+  /* ---------- VERIFY PANEL ---------- */
+  .verify-input{
+    width:100%; background:var(--surface-raised); border:1px solid var(--line); border-radius:3px;
+    color:var(--bone); font-family:'IBM Plex Mono'; padding:14px 16px; font-size:0.85rem; margin-top:8px;
+  }
+  .verify-result{margin-top:26px; display:none;}
+  .verify-result.show{display:block;}
+  .badge{
+    display:inline-flex; align-items:center; gap:8px; font-size:0.78rem; letter-spacing:0.04em;
+    text-transform:uppercase; padding:6px 14px; border-radius:999px; font-family:'IBM Plex Mono';
+  }
+  .badge.found{background:rgba(176,141,87,0.14); color:var(--brass-bright); border:1px solid rgba(176,141,87,0.35);}
+  .badge.notfound{background:rgba(163,39,59,0.12); color:var(--crimson-bright); border:1px solid rgba(163,39,59,0.35);}
+
+  footer{padding:30px 6vw 60px; color:var(--muted); font-size:0.78rem; border-top:1px solid var(--line);}
+  footer a{color:var(--brass-bright); text-decoration:none;}
+  footer a:hover{text-decoration:underline;}
+
+  @media (prefers-reduced-motion: reduce){
+    .seal{transition:none;}
+  }
+  @media (max-width:640px){
+    .cert-inner{padding:30px 22px;}
+    nav{padding:18px 5vw;}
+    header.hero{padding:44px 5vw 10px;}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="brand"><span class="brand-seal"></span>Notary</div>
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="notarize">Notarize</button>
+    <button class="tab-btn" data-tab="verify">Verify</button>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="eyebrow">Proof of existence &mdash; on-chain</div>
+  <h1 class="display">Prove a document existed, <em>without revealing it.</em></h1>
+  <p class="lede">Drop in a file. Notary computes its fingerprint in your browser and timestamps that fingerprint on the blockchain — permanent, public, and impossible to backdate. The file itself never leaves your device.</p>
+</header>
+
+<main>
+
+  <!-- ================= NOTARIZE PANEL ================= -->
+  <section class="panel active" id="panel-notarize">
+
+    <div class="wallet-bar">
+      <div class="wallet-left">
+        <span class="wallet-dot" id="walletDot"></span>
+        <span id="walletLabel">Wallet not connected</span>
+      </div>
+      <button id="connectBtn">Connect wallet</button>
+    </div>
+
+    <div class="certificate">
+      <div class="cert-inner">
+
+        <div class="dropzone" id="dropzone">
+          <div class="glyph">&#128220;</div>
+          <div class="primary-txt">Drop a file, or click to choose one</div>
+          <div class="secondary-txt">Entry 001 &middot; fingerprint computed locally with SHA-256</div>
+          <input type="file" id="fileInput" />
+        </div>
+
+        <div id="fileDetails" style="display:none; margin-top:26px;">
+          <div class="ledger-row"><span class="k">Filename</span><span class="v" id="fnLabel">&mdash;</span></div>
+          <div class="ledger-row"><span class="k">SHA-256 fingerprint</span><span class="v" id="fnHash">&mdash;</span></div>
+        </div>
+
+        <div class="divider-label" id="notarizeDivider" style="display:none;">Commit to chain</div>
+
+        <button class="action primary" id="notarizeBtn" style="display:none;" disabled>Connect wallet to notarize</button>
+        <div class="status" id="notarizeStatus"></div>
+
+        <div class="seal-stage" id="sealStage" style="display:none;">
+          <div class="seal" id="seal">
+            <div class="seal-glyph">Notarized<br/>&amp; sealed</div>
+          </div>
+          <div class="seal-caption" id="sealCaption"></div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= VERIFY PANEL ================= -->
+  <section class="panel" id="panel-verify">
+    <div class="certificate">
+      <div class="cert-inner">
+        <div class="dropzone" id="dropzoneVerify">
+          <div class="glyph">&#128269;</div>
+          <div class="primary-txt">Drop a file to check its record</div>
+          <div class="secondary-txt">or paste a fingerprint below</div>
+          <input type="file" id="fileInputVerify" />
+        </div>
+
+        <div class="divider-label">Or check a fingerprint directly</div>
+        <input class="verify-input" id="hashInput" placeholder="0x..." />
+        <button class="action" id="verifyBtn" style="margin-top:16px;">Check record</button>
+        <div class="status" id="verifyStatus"></div>
+
+        <div class="verify-result" id="verifyResult">
+          <span class="badge" id="verifyBadge">&mdash;</span>
+          <div style="margin-top:20px;">
+            <div class="ledger-row"><span class="k">Fingerprint</span><span class="v" id="vHash">&mdash;</span></div>
+            <div class="ledger-row"><span class="k">Submitted by</span><span class="v" id="vSubmitter">&mdash;</span></div>
+            <div class="ledger-row"><span class="k">Timestamp</span><span class="v" id="vTimestamp">&mdash;</span></div>
+            <div class="ledger-row"><span class="k">Label</span><span class="v" id="vLabel">&mdash;</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  Runs on the Ethereum Sepolia test network. Requires a browser wallet (e.g. MetaMask) with free test ETH from a
+  <a href="https://sepoliafaucet.com" target="_blank" rel="noopener">Sepolia faucet</a>. No file is ever uploaded — only its hash.
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.1/dist/ethers.umd.min.js"></script>
+<script>
+/* =========================================================================
+   CONFIG — fill these in after you deploy ProofOfExistence.sol
+   ========================================================================= */
+const CONTRACT_ADDRESS = "Deployed_contract_address"; // <-- paste after deploying via Remix
+const CONTRACT_ABI = [
+  "function notarize(bytes32 hash, string label) external",
+  "function verify(bytes32 hash) external view returns (bool exists, address submitter, uint256 timestamp, string label)",
+  "event Notarized(bytes32 indexed hash, address indexed submitter, uint256 timestamp, string label)"
+];
+const EXPECTED_CHAIN_ID = 11155111n; // Sepolia testnet
+
+/* ========================================================================= */
+
+let provider, signer, contract;
+let currentHashHex = null;
+let currentFileName = "";
+
+// ---------- Tabs ----------
+document.querySelectorAll(".tab-btn").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("panel-" + btn.dataset.tab).classList.add("active");
+  });
+});
+
+// ---------- Wallet connect ----------
+const connectBtn = document.getElementById("connectBtn");
+const walletDot = document.getElementById("walletDot");
+const walletLabel = document.getElementById("walletLabel");
+const notarizeBtn = document.getElementById("notarizeBtn");
+
+async function connectWallet(){
+  if(!window.ethereum){
+    setStatus("notarizeStatus", "No wallet found. Install MetaMask to continue.", "err");
+    return;
+  }
+  provider = new ethers.BrowserProvider(window.ethereum);
+  await provider.send("eth_requestAccounts", []);
+  signer = await provider.getSigner();
+  const network = await provider.getNetwork();
+
+  if(network.chainId !== EXPECTED_CHAIN_ID){
+    try{
+      await window.ethereum.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: "0x" + EXPECTED_CHAIN_ID.toString(16) }]
+      });
+    }catch(e){
+      setStatus("notarizeStatus", "Please switch your wallet to the Sepolia test network.", "err");
+      return;
+    }
+  }
+
+  contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+  const addr = await signer.getAddress();
+  walletDot.classList.add("on");
+  walletLabel.textContent = addr.slice(0,6) + "…" + addr.slice(-4) + " · Sepolia";
+  connectBtn.textContent = "Connected";
+  connectBtn.disabled = true;
+  if(currentHashHex){
+    notarizeBtn.disabled = false;
+    notarizeBtn.textContent = "Notarize this fingerprint on-chain";
+  }
+}
+connectBtn.addEventListener("click", connectWallet);
+
+// ---------- Hashing helper ----------
+async function sha256HexOfFile(file){
+  const buf = await file.arrayBuffer();
+  const digest = await crypto.subtle.digest("SHA-256", buf);
+  const bytes = Array.from(new Uint8Array(digest));
+  return "0x" + bytes.map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+
+function setStatus(id, msg, kind){
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = "status" + (kind ? " " + kind : "");
+}
+
+// ---------- Notarize flow ----------
+const dropzone = document.getElementById("dropzone");
+const fileInput = document.getElementById("fileInput");
+dropzone.addEventListener("click", ()=>fileInput.click());
+["dragover","dragleave","drop"].forEach(evt=>{
+  dropzone.addEventListener(evt, e=>{
+    e.preventDefault();
+    dropzone.classList.toggle("drag", evt==="dragover");
+  });
+});
+dropzone.addEventListener("drop", e=>{
+  if(e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener("change", e=>{
+  if(e.target.files.length) handleFile(e.target.files[0]);
+});
+
+async function handleFile(file){
+  currentFileName = file.name;
+  setStatus("notarizeStatus", "Computing fingerprint locally…");
+  currentHashHex = await sha256HexOfFile(file);
+
+  document.getElementById("fnLabel").textContent = file.name;
+  document.getElementById("fnHash").textContent = currentHashHex;
+  document.getElementById("fileDetails").style.display = "block";
+  document.getElementById("notarizeDivider").style.display = "flex";
+  document.getElementById("notarizeBtn").style.display = "block";
+  document.getElementById("sealStage").style.display = "none";
+  document.getElementById("seal").classList.remove("stamped");
+  document.getElementById("sealCaption").classList.remove("show");
+
+  setStatus("notarizeStatus", contract ? "" : "Connect your wallet to notarize this fingerprint.");
+  notarizeBtn.disabled = !contract;
+  notarizeBtn.textContent = contract ? "Notarize this fingerprint on-chain" : "Connect wallet to notarize";
+}
+
+notarizeBtn.addEventListener("click", async ()=>{
+  if(!contract || !currentHashHex) return;
+  notarizeBtn.disabled = true;
+  setStatus("notarizeStatus", "Confirm the transaction in your wallet…");
+  try{
+    // truncate label to keep gas costs sane
+    const label = currentFileName.slice(0, 64);
+    const tx = await contract.notarize(currentHashHex, label);
+    setStatus("notarizeStatus", "Waiting for confirmation on-chain…");
+    const receipt = await tx.wait();
+    setStatus("notarizeStatus", "Confirmed in block " + receipt.blockNumber + ".", "ok");
+
+    document.getElementById("sealStage").style.display = "flex";
+    requestAnimationFrame(()=>{
+      document.getElementById("seal").classList.add("stamped");
+      const cap = document.getElementById("sealCaption");
+      cap.textContent = "tx " + receipt.hash.slice(0,10) + "…" + receipt.hash.slice(-6);
+      setTimeout(()=>cap.classList.add("show"), 400);
+    });
+  }catch(err){
+    console.error(err);
+    const msg = (err && err.reason) ? err.reason : "Transaction failed or was rejected.";
+    setStatus("notarizeStatus", msg, "err");
+    notarizeBtn.disabled = false;
+  }
+});
+
+// ---------- Verify flow ----------
+const dropzoneVerify = document.getElementById("dropzoneVerify");
+const fileInputVerify = document.getElementById("fileInputVerify");
+const hashInput = document.getElementById("hashInput");
+
+dropzoneVerify.addEventListener("click", ()=>fileInputVerify.click());
+["dragover","dragleave","drop"].forEach(evt=>{
+  dropzoneVerify.addEventListener(evt, e=>{
+    e.preventDefault();
+    dropzoneVerify.classList.toggle("drag", evt==="dragover");
+  });
+});
+dropzoneVerify.addEventListener("drop", async e=>{
+  if(e.dataTransfer.files.length){
+    const hash = await sha256HexOfFile(e.dataTransfer.files[0]);
+    hashInput.value = hash;
+    runVerify(hash);
+  }
+});
+fileInputVerify.addEventListener("change", async e=>{
+  if(e.target.files.length){
+    const hash = await sha256HexOfFile(e.target.files[0]);
+    hashInput.value = hash;
+    runVerify(hash);
+  }
+});
+document.getElementById("verifyBtn").addEventListener("click", ()=>runVerify(hashInput.value.trim()));
+
+async function runVerify(hash){
+  if(!hash || !hash.startsWith("0x") || hash.length !== 66){
+    setStatus("verifyStatus", "Enter a valid 32-byte hash (0x followed by 64 hex characters).", "err");
+    return;
+  }
+  setStatus("verifyStatus", "Checking the chain…");
+  try{
+    // read-only calls don't require a signer, but do require a provider
+    const readProvider = provider || new ethers.BrowserProvider(window.ethereum || ethers.getDefaultProvider());
+    const readContract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, readProvider);
+    const [exists, submitter, timestamp, label] = await readContract.verify(hash);
+
+    setStatus("verifyStatus", "");
+    document.getElementById("verifyResult").classList.add("show");
+    const badge = document.getElementById("verifyBadge");
+
+    if(exists){
+      badge.textContent = "Record found";
+      badge.className = "badge found";
+      document.getElementById("vHash").textContent = hash;
+      document.getElementById("vSubmitter").textContent = submitter;
+      document.getElementById("vTimestamp").textContent = new Date(Number(timestamp)*1000).toUTCString();
+      document.getElementById("vLabel").textContent = label || "—";
+    } else {
+      badge.textContent = "No record found";
+      badge.className = "badge notfound";
+      document.getElementById("vHash").textContent = hash;
+      document.getElementById("vSubmitter").textContent = "—";
+      document.getElementById("vTimestamp").textContent = "—";
+      document.getElementById("vLabel").textContent = "—";
+    }
+  }catch(err){
+    console.error(err);
+    setStatus("verifyStatus", "Could not reach the contract. Check the contract address and network.", "err");
+  }
+}
+</script>
+</body>
+</html>
