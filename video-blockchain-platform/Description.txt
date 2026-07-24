@@ -1,0 +1,6 @@
+IntelliJ IDEA
+IntelliJ has solid JavaScript/Node support (even in the Community edition, though the Ultimate edition has better Node.js integration). You can:
+
+Open the video-blockchain-platform folder as a project in IntelliJ
+Use its built-in Terminal tab (View → Tool Windows → Terminal) to run the npm install, npx hardhat, node server.js commands exactly as before
+IntelliJ will syntax-highlight the .sol and .js files fine, though it won't have deep Solidity-specific tooling (no built-in compiler integration) unless you install a Solidity plugin from the marketplace
